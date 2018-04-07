@@ -289,3 +289,47 @@ npm run dev
 `app.vue`文件，引入需要的组件，写好样式。我们不能在`footer.jsx`中写样式，所以我们需要单独建一个文件，我们在styles下建`footer.styl`。
 <b>我们应该把主要数据都声明在一个顶层文件里如`todo.vue`，这样方便管理。</b><br>
 我们将这些文件填充好后，项目就完成啦！
+
+# 3.优化
+这里只讲一下css文件的分离打包。我们要装个插件，因为这个插件还不支持Webpack4以上版本，所以装的时候加`@next`,如下：
+```
+npm i extract-text-webpack-plugin@next
+```
+在webpack的配置文件中引入：
+```
+const ExtractPlugin = require('extract-text-webpack-plugin');
+```
+我们需要先掉modules的rules中stylus的相关配置，因为这要区分生产环境和开发环境。我们把原始的这部分设置加到`if(isDev)`中：
+```javascript
+config.module.rules.push({
+    ...
+    //stylus的原始设置
+})
+```
+else中的内容如下：
+```javascript
+    config.output.filename = '[name].[chunkhash:8].js';
+
+    config.module.rules.push(
+        {
+            test: /\.styl$/,
+            use: ExtractPlugin.extract({
+                fallback: 'style-loader',
+                use: [
+                    'css-loader',
+                    {
+                        loader: 'postcss-loader',
+                        options: {
+                            sourceMap: true
+                        }
+                    },
+                    'stylus-loader'
+                ]
+            })
+        },
+    );
+    config.plugins.push(
+        new ExtractPlugin('styles.css')
+    );
+```
+`npm run build`我们就会发现在dist中多出了style.css文件。
